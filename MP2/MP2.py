@@ -13,9 +13,14 @@ np.set_printoptions(threshold=sys.maxsize)
 
 # Import images
 img1 = cv.imread('/home/codynichoson/computer_vision/MP2/gun.bmp',0)
+height = img1.shape[0]
+width = img1.shape[1]
+img1_bin = img1/255
 
+plt.subplot(3, 3, 1)
 plt.figure(1)
-img_show = plt.imshow(img1)
+plt.imshow(img1_bin)
+plt.title("Original")
 
 def dilation(img, size):
     se = [size,size]
@@ -37,10 +42,8 @@ def dilation(img, size):
                     else:
                         pass
 
-    plt.figure(2)
-    img_show = plt.imshow(new_img)
+    return new_img
     
-
 def erosion(img, size):
     se = [size,size]
     SE = np.array([[1,1,1],[1,1,1],[1,1,1]])
@@ -59,8 +62,7 @@ def erosion(img, size):
             if elem.all()== SE.all():
                 new_img[r][c] = 1
 
-    plt.figure(3)
-    img_show = plt.imshow(new_img)
+    return new_img
 
 def get_element(img, r, c):
     element = np.array([[0,0,0],[0,0,0],[0,0,0]])
@@ -77,15 +79,63 @@ def get_element(img, r, c):
     return element
 
 def opening(img, SE):
-    pass
+    x = erosion(img, SE)
+    open_img = dilation(x, SE)
+
+    return open_img
 
 def closing(img, SE):
-    pass
+    x = dilation(img, SE)
+    close_img = erosion(x, SE)
+
+    return close_img
 
 def boundary(img):
-    pass
+    #bound_img = img1_bin - erosion(img, 5)
+    bound_img = dilation(img, 5) - img1_bin
+    #bound_img2 = erosion(bound_img,3)
 
+    return bound_img
 
-t = erosion(img1,3)
+dil3_img = dilation(img1,3)
+dil5_img = dilation(img1,5)
+ero3_img = erosion(img1,3)
+ero5_img = erosion(img1,5)
+open3_img = opening(img1,3)
+open5_img = opening(img1,5)
+close3_img = closing(img1,3)
+bound_img = boundary(img1)
+
+plt.subplot(3, 3, 2)
+plt.imshow(dil3_img)
+plt.title("Dilation 3x3")
+
+plt.subplot(3, 3, 3)
+plt.imshow(dil5_img)
+plt.title("Dilation 5x5")
+
+plt.subplot(3, 3, 4)
+plt.imshow(ero3_img)
+plt.title("Erosion 3x3")
+
+plt.subplot(3, 3, 5)
+plt.imshow(ero5_img)
+plt.title("Erosion 5x5")
+
+plt.subplot(3, 3, 6)
+plt.imshow(open3_img)
+plt.title("Opening 3x3")
+
+plt.subplot(3, 3, 7)
+plt.imshow(open5_img)
+plt.title("Opening 5x5")
+
+plt.subplot(3, 3, 8)
+plt.imshow(open3_img)
+plt.title("Closing 3x3")
+
+plt.subplot(3, 3, 9)
+plt.imshow(bound_img)
+plt.title("Boundary")
 
 plt.show()
