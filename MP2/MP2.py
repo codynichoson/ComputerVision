@@ -91,9 +91,9 @@ def closing(img, SE):
     return close_img
 
 def boundary(img):
-    #bound_img = img1_bin - erosion(img, 5)
-    bound_img = dilation(img, 5) - img1_bin
-    #bound_img2 = erosion(bound_img,3)
+    x = closing(img,5)
+    bound_img = x - erosion(x,5)
+    #bound_img = dilation(img, 3) - img1_bin
 
     return bound_img
 
