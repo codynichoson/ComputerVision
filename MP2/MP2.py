@@ -12,21 +12,16 @@ import matplotlib.pyplot as plt
 np.set_printoptions(threshold=sys.maxsize)
 
 # Import images
-img1 = Image.open('/home/codynichoson/computer_vision/MP2/gun.bmp')
+img1 = cv.imread('/home/codynichoson/computer_vision/MP2/gun.bmp',0)
 
-img2 = cv.imread('/home/codynichoson/computer_vision/MP2/gun.bmp',0)
-
-# Initialize variables
-width, height = img1.size
-
+plt.figure(1)
+img_show = plt.imshow(img1)
 
 def dilation(img, size):
     se = [size,size]
-    print(se)
 
     x = se[0] // 2
     y = se[1] // 2
-    print(x)
 
     height = img.shape[0]
     width = img.shape[1]
@@ -42,12 +37,44 @@ def dilation(img, size):
                     else:
                         pass
 
-    plt.figure(1)
+    plt.figure(2)
     img_show = plt.imshow(new_img)
     
 
 def erosion(img, size):
-    pass
+    se = [size,size]
+    SE = np.array([[1,1,1],[1,1,1],[1,1,1]])
+
+    x = se[0] // 2
+    y = se[1] // 2
+
+    height = img.shape[0]
+    width = img.shape[1]
+
+    new_img = np.zeros((height,width))
+
+    for r in range(height-1):
+        for c in range(width-1):
+            elem = get_element(img, r, c)
+            if elem.all()== SE.all():
+                new_img[r][c] = 1
+
+    plt.figure(3)
+    img_show = plt.imshow(new_img)
+
+def get_element(img, r, c):
+    element = np.array([[0,0,0],[0,0,0],[0,0,0]])
+    element[1][1] = img[r][c]
+    element[0][1] = img[r-1][c]
+    element[2][1] = img[r+1][c]
+    element[1][0] = img[r][c-1]
+    element[1][2] = img[r][c+1]
+    element[2][2] = img[r+1][c+1]
+    element[0][0] = img[r-1][c-1]
+    element[2][0] = img[r+1][c-1]
+    element[0][2] = img[r-1][c+1]
+
+    return element
 
 def opening(img, SE):
     pass
@@ -58,10 +85,7 @@ def closing(img, SE):
 def boundary(img):
     pass
 
-#img1.show()
-#dilation(img1)
-#dilation2(img2)
 
-t = dilation(img2,3)
+t = erosion(img1,3)
 
 plt.show()
