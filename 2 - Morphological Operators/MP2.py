@@ -13,7 +13,7 @@ np.set_printoptions(threshold=sys.maxsize)
 
 # Import images
 #img1 = cv.imread('/home/codynichoson/computer_vision/MP2/gun.bmp',0)
-img1 = cv.imread('/home/codynichoson/computer_vision/MP2/palm.bmp',0)
+img1 = cv.imread('/home/codynichoson/computer_vision/2 - Morphological Operators/palm.bmp',0)
 height = img1.shape[0]
 width = img1.shape[1]
 img1_bin = img1/255
