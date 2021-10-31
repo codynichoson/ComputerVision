@@ -7,6 +7,7 @@ from IPython.display import display
 import matplotlib.pyplot as plt
 np.set_printoptions(threshold=sys.maxsize)
 
+# Histogram function
 def histo(img, bins):
     histogram = np.zeros(bins)
     for pixel in img:
