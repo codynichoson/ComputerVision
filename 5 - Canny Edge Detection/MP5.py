@@ -34,7 +34,6 @@ class Canny:
         return mag.astype(int), theta
 
     def FindThreshold(self, Mag, percentageOfNonEdge):
-        # hist = np.histogram(Mag.flatten(), 256)
         hist, bins = np.histogram(Mag.flatten(), 256)
         pdf = hist/sum(hist)
         cdf = np.cumsum(pdf)
@@ -46,35 +45,35 @@ class Canny:
         return T_low, T_high
 
     def NonmaximaSupress(self, Mag, Theta):
-        M, N = Mag.shape
+        row, col = Mag.shape
         New_Mag = Mag*0
         angle = Theta * 180 / np.pi
 
         angle[angle < 0] =+ 180
 
-        for i in range(1,M-1):
-            for j in range(1,N-1):
-                q = 255
-                r = 255
+        for i in range(1,row-1):
+            for j in range(1,col-1):
+                x = 255
+                y = 255
                 
                 #angle 0
                 if (0 <= angle[i][j] < 22.5) or (157.5 <= angle[i][j] <= 180):
-                    q = Mag[i, j+1]
-                    r = Mag[i, j-1]
+                    x = Mag[i, j+1]
+                    y = Mag[i, j-1]
                 #angle 45
                 elif (22.5 <= angle[i][j] < 67.5):
-                    q = Mag[i+1, j-1]
-                    r = Mag[i-1, j+1]
+                    x = Mag[i+1, j-1]
+                    y = Mag[i-1, j+1]
                 #angle 90
                 elif (67.5 <= angle[i][j] < 112.5):
-                    q = Mag[i+1, j]
-                    r = Mag[i-1, j]
+                    x = Mag[i+1, j]
+                    y = Mag[i-1, j]
                 #angle 135
                 elif (112.5 <= angle[i][j] < 157.5):
-                    q = Mag[i-1, j-1]
-                    r = Mag[i+1, j+1]
+                    x = Mag[i-1, j-1]
+                    y = Mag[i+1, j+1]
 
-                if (Mag[i,j] >= q) and (Mag[i,j] >= r):
+                if (Mag[i,j] >= x) and (Mag[i,j] >= y):
                     New_Mag[i,j] = Mag[i,j]
                 else:
                     New_Mag[i,j] = 0
@@ -82,9 +81,9 @@ class Canny:
         return New_Mag
 
     def EdgeLinking(self, New_Mag, T_low, T_high):
-
-        strongval = 255
+        
         weakval = 10
+        strongval = 255
 
         strong = New_Mag*0
         weak = New_Mag*0
@@ -101,7 +100,6 @@ class Canny:
         plt.subplot(2,4,5)
         plt.title('Weak')
         plt.imshow(weak, cmap='gray')
-
 
         plt.subplot(2,4,6)
         plt.title('Strong')
