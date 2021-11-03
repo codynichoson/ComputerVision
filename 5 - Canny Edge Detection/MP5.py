@@ -6,31 +6,6 @@ import math
 import scipy.signal as sci
 
 class Canny:
-    def __init__(self):
-        pass
-
-    def convolution(self, image, kernel, average=False):
-
-        image_row, image_col = image.shape
-        kernel_row, kernel_col = kernel.shape
-    
-        output = np.zeros(image.shape)
-    
-        pad_height = int((kernel_row - 1) / 2)
-        pad_width = int((kernel_col - 1) / 2)
-    
-        padded_image = np.zeros((image_row + (2 * pad_height), image_col + (2 * pad_width)))
-    
-        padded_image[pad_height:padded_image.shape[0] - pad_height, pad_width:padded_image.shape[1] - pad_width] = image
-    
-        for row in range(image_row):
-            for col in range(image_col):
-                output[row, col] = np.sum(kernel * padded_image[row:row + kernel_row, col:col + kernel_col])
-                if average:
-                    output[row, col] /= kernel.shape[0] * kernel.shape[1]
-    
-        return output
-
     def GaussSmoothing(self, image, size, sigma):
         kernel = cv.getGaussianKernel(size, sigma)
         kernel = np.outer(kernel, kernel)
@@ -38,9 +13,16 @@ class Canny:
 
         return S
 
-    def ImageGradient(self, S):
-        Gx = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
-        Gy = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
+    def ImageGradient(self, S, method):
+        if method == 'sobel':
+            Gx = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+            Gy = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
+        elif method == 'robert':
+            Gx = np.array([[1, 0], [0, -1]])
+            Gy = np.array([[0, -1], [1, 0]])
+        elif method == 'prewitt':
+            Gx = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
+            Gy = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
         
         Ix = sci.convolve2d(Gx, S)
         Iy = sci.convolve2d(Gy, S)
@@ -149,32 +131,43 @@ class Canny:
         else:
             return False
 
-# MAIN CODE
+# MAIN CODE ------------------------------------------------------------------
 
-lena = cv.imread('/home/codynichoson/Q1/computer_vision/5 - Canny Edge Detection/lena.bmp', cv.IMREAD_GRAYSCALE)
-
+# Initialize class
 Canny = Canny()
-S = Canny.GaussSmoothing(lena, 5, 1)
-Mag, Theta = Canny.ImageGradient(S)
+
+# Load image (options are lena.bmp, test1.bmp, pointer1.bmp, or joy1.bmp)
+image = cv.imread('/home/codynichoson/Q1/computer_vision/5 - Canny Edge Detection/lena.bmp', cv.IMREAD_GRAYSCALE)
+
+# Gaussian smoothing
+S = Canny.GaussSmoothing(image, 5, 1)
+
+# Find image gradient magnitude and angle
+Mag, Theta = Canny.ImageGradient(S, 'sobel') # 'sobel', 'robert', or 'prewitt'
+
+# Find high and low thresholds
 T_low, T_high = Canny.FindThreshold(Mag, 0.8)
+
+# Apply non-maximum suppression
 New_Mag = Canny.NonmaximaSupress(Mag, Theta)
-strong = Canny.EdgeLinking(New_Mag, T_low, T_high)
 
+# Link edges
+result = Canny.EdgeLinking(New_Mag, T_low, T_high)
 
-
+# Plot results
 plt.figure(1)
 plt.subplot(2,4,1)
 plt.title('Original')
-plt.imshow(lena, cmap='gray') #original
+plt.imshow(image, cmap='gray')
 plt.subplot(2,4,2)
 plt.title('Gaussian Smoothed')
-plt.imshow(S, cmap='gray') #smoothed
+plt.imshow(S, cmap='gray')
 plt.subplot(2,4,3)
 plt.title('Gradient Mag')
-plt.imshow(Mag, cmap='gray') #gradient magnitude
+plt.imshow(Mag, cmap='gray')
 plt.subplot(2,4,4)
 plt.title('Nonmaxima Suppressed')
-plt.imshow(strong, cmap='gray') #non maxima supressed
+plt.imshow(result, cmap='gray')
 plt.subplot(2,4,7)
 plt.title('Edge Linked')
 plt.imshow(New_Mag, cmap='gray')
