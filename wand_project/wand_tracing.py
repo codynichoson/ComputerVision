@@ -65,6 +65,12 @@ while True:
     registration.apply(color, depth, undistorted, registered, bigdepth=bigdepth, color_depth_map=color_depth_map)
 
     ir_array = ir.asarray() / 65535.
+    
+    fgbg = cv2.createBackgroundSubtractorMOG2()
+    fgmask = fgbg.apply(ir_array)
+
+    cv2.imshow('fgmask', fgmask)
+
     mask = np.zeros(ir_array.shape)
 
     width = int(ir_array.shape[1])
@@ -72,9 +78,13 @@ while True:
     dim = (width, height)
 
     color_array = cv2.resize(color.asarray(), (int(1920 / 3), int(1080 / 3)))
-    color_crop = color_array[:, 103:537]
-    color_align = cv2.resize(color_crop, dim) # new color array size -> 360x434
-
+    color_crop = color_array[:, 64:576]
+    print(color_crop.shape)
+    # cv2.imshow("original", color_array)
+    # cv2.imshow("crop", color_crop)
+    blank_edge = np.zeros((32, 512, 4), np.uint8)
+    color_final = np.concatenate((blank_edge, color_crop, blank_edge), axis=0)
+    
     # Find brightest pixel in IR image
     max = np.max(ir_array)
 
@@ -98,7 +108,7 @@ while True:
             for j in range(point[1]-size, point[1]+size):
                 ir_array[i][j] = 255
                 mask[i][j] = 255
-                color_align[i-10][j+10] = (0,0,255,1)
+                color_final[int(i-10*(1-i/height))][int(j+30*(1-j/width))] = (0,0,255,1)
 
     # Find template from trace
     # temp_upper = np.min([sublist[0] for sublist in trace])
@@ -116,7 +126,7 @@ while True:
     #cv2.imshow("template", template)
     
 
-    cv2.imshow("color", color_align)
+    cv2.imshow("color", color_final)
 
     listener.release(frames)
 
