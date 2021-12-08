@@ -1,11 +1,20 @@
 # coding: utf-8
+"""
+Cody Nichoson
+ECE 332
+Introduction to Computer Vision
+8 December, 2021
 
+This code uses a Microsoft Kinect V2 to track a magic wand with an infrared reflective material
+at its tip and draw a trace as it moves around the frame.
+"""
 import numpy as np
 import cv2
 import sys
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
 
+##################### KINECT V2 SETUP #####################
 try:
     from pylibfreenect2 import OpenGLPacketPipeline
     pipeline = OpenGLPacketPipeline()
@@ -17,10 +26,6 @@ except:
         from pylibfreenect2 import CpuPacketPipeline
         pipeline = CpuPacketPipeline()
 print("Packet pipeline:", type(pipeline).__name__)
-
-# Create and set logger
-# logger = createConsoleLogger(LoggerLevel.Debug)
-# setGlobalLogger(logger)
 
 fn = Freenect2()
 num_devices = fn.enumerateDevices()
@@ -53,14 +58,17 @@ need_color_depth_map = False
 bigdepth = Frame(1920, 1082, 4) if need_bigdepth else None
 color_depth_map = np.zeros((424, 512),  np.int32).ravel() if need_color_depth_map else None
 
-trace = []
+##################### INITIALIZE VARIBALES #####################
+trace = [] # Initialize empty trace
+cursor_color = (255, 255, 255, 1) # Initial trace color (white)
+video_frames = []
 
+# Experimenting with background subtractors
 # fgbg1 = cv2.bgsegm.createBackgroundSubtractorMOG();  
 # fgbg2 = cv2.createBackgroundSubtractorMOG2()
 # fgbg3 = cv2.bgsegm.createBackgroundSubtractorGMG();
 
-cursor_color = (255, 255, 255, 1)
-
+##################### MAIN VIDEO LOOP #####################
 while True:
     # Get new frames from Kinect
     frames = listener.waitForNewFrame()
@@ -73,17 +81,22 @@ while True:
     registration.apply(color, depth, undistorted, registered, bigdepth=bigdepth, color_depth_map=color_depth_map)
 
     ir_array = ir.asarray() / 65535.
+    ir_blank = ir.asarray() / 65535.
     
+    # Experimenting with background subtractors
     # fgmask1 = fgbg1.apply(ir_array)
     # fgmask2 = fgbg2.apply(ir_array)
     # fgmask3 = fgbg3.apply(ir_array)
 
+    # Initilize empty mask array
     mask = np.zeros(ir_array.shape)
 
+    # Get IR frame characteristics
     width = int(ir_array.shape[1])
     height = int(ir_array.shape[0])
     dim = (width, height)
 
+    # Resize color array to match dimension of ir_array
     color_array = cv2.resize(color.asarray(), (int(1920 / 3), int(1080 / 3)))
     color_crop = color_array[:, 64:576]
     blank_edge = np.zeros((32, 512, 4), np.uint8)
@@ -97,10 +110,10 @@ while True:
     fudge = 12
 
     # Define rectangle upper left corners (start points)
-    red = [center - int(gap/2) - boxsize - gap - boxsize, height]
-    blue = [center - int(gap/2) - boxsize, height+50]
-    yellow = [center + int(gap/2), height]
-    purple = [center + int(gap/2) + boxsize + gap, height]
+    # red = [center - int(gap/2) - boxsize - gap - boxsize, height]
+    # blue = [center - int(gap/2) - boxsize, height+50]
+    # yellow = [center + int(gap/2), height]
+    # purple = [center + int(gap/2) + boxsize + gap, height]
 
     red = [512 - gap - boxsize, center - int(gap/2) - boxsize - gap - boxsize]
     blue = [512 - gap - boxsize, center - int(gap/2) - boxsize]
@@ -108,7 +121,6 @@ while True:
     purple = [512 - gap - boxsize, center + int(gap/2) + boxsize + gap]
 
     # Draw rectangles on color image
-    # color_final[blue[1]:blue[1]+boxsize][blue[0]:blue[0]+boxsize] = (255,0,0,1)
     cv2.rectangle(color_final, (red[0], red[1]), (red[0]+boxsize, red[1]+boxsize), (0, 0, 255), -1)
     cv2.rectangle(color_final, (yellow[0], yellow[1]), (yellow[0]+boxsize, yellow[1]+boxsize), (0, 255, 255), -1)
     cv2.rectangle(color_final, (blue[0], blue[1]), (blue[0]+boxsize, blue[1]+boxsize), (255, 0, 0), -1)
@@ -117,34 +129,22 @@ while True:
     # Find brightest pixel in IR image
     max = np.max(ir_array)
 
-    if max > 0.98:
+    if max > 0.99: # If the wand tip is in frame
         max_indices = np.where(ir_array == max)
-        old_length = len(trace)
-        print(max_indices)
-        
         max_index = [max_indices[0][1], max_indices[1][1]]
         if max_index not in trace:
             trace.append(max_index)
-            new_length = len(trace)
-        
+        else:
+            pass
+
         if len(trace) == 100: # or new_length == old_length:
             trace.pop(0)
-
-        old_length = new_length
-
-        print(f"length of trace: {len(trace)}")
-
-        # if len(trace) == 100: # Remove first trace element once it hits 100 pixels in length
-        #     trace.pop(0)   
-
-    elif max < 0.98 and len(trace) > 0:
+    elif max < 0.99 and len(trace) > 0: # If wand tip not in frame, but trace exists
         trace.pop(0)
-        print("second")
-
-    elif max < 0.98:
-        print("third")
+    elif max < 0.99: # If wand tip not in frame and no trace exists
         pass
 
+    # Color changing - if wand tip within bounding box of color square, change cursor_color
     if max_index[0] > red[1]-gap and max_index[0] < red[1]+boxsize-gap and max_index[1] > red[0]-boxsize+gap and max_index[1] < red[0]:
         cursor_color = (0, 0, 255, 1)
     elif max_index[0] > blue[1] - gap and max_index[0] < blue[1] + boxsize - gap and max_index[1] > blue[0]-boxsize and max_index[1] < blue[0]:
@@ -159,15 +159,18 @@ while True:
         size = 3
         for i in range(point[0]-size, point[0]+size):
             for j in range(point[1]-size, point[1]+size):
-                ir_array[i][j] = 255
-                mask[i][j] = 255
-                color_final[i+10][j+40] = cursor_color
-                # color_final[i][j] = cursor_color
+                ir_array[i-1][j-1] = 255
+                mask[i-1][j-1] = 255
+                if i > 413:
+                    i = 413
+                if j > 471:
+                    j = 471
+                color_final[i+5][j+20] = cursor_color # Adding some offets to help with error between wand tip and trace
 
-
-    ir_and_mask = np.concatenate((ir_array, mask), axis=1)
-    cv2.imshow("color mask", color_final)
-    # cv2.imshow("IR", ir_array)
+    # Display frames of interest
+    cv2.imshow("Color", color_final)
+    cv2.imshow("IR", ir_array)
+    cv2.imshow("Mask", mask)
 
     listener.release(frames)
 
